@@ -1,0 +1,5 @@
+rostopic options:
+/camera/depth/points
+/camera/depth/image_raw
+
+idea: find the closest point in our image (e.g. lightest color)
