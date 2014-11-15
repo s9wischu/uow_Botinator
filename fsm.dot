@@ -11,44 +11,56 @@ digraph finite_state_machine {
         node [style=filled, color=white];
         style=filled;
         color=lightgrey;
-
-        Follow -> Wait [ label = "loses user legs" ];
-        Wait -> Follow [ label = "sees user card" ];
-        Follow -> Register_Product [ label = "product fiducial" ];
-        Register_Product -> Product_Warning [ label = "product warning (balance, allergy, not recognized)" ];
-        Follow -> Guide_To_Product [ label = "user asks to be guided to product" ];
-        Guide_To_Product -> Wait [ label = "arrives at product" ];
-        Product_Warning -> Follow [ label = "user acknowledges warning" ];
-        Register_Product -> Follow [ label = "product registered successfully" ];
-        Wait -> Timeout [ label = "no user card seen in X min" ];
-        Follow -> Nav_Error [ label = "bumper event" ]; // hit something
-        Guide_To_Product -> Nav_Error [ label = "bumper event" ];
-        Nav_Error -> Follow [ label = "employee reorients robot" ];
-
-
+        F_Wait -> F_Follow [ label = "sees user card \ \nDO: Beep" ];
+        F_Wait -> F_Timeout [ label = "no user card \nseen in X min\nDO: notify employee" ];
+        
+        F_Follow -> F_Customer_Stop [ label = "minimum distance  \nto customer reached" ]
+        F_Follow -> F_Wait [ label = "loses user legs \nDO: show warning" ];
+        F_Follow -> F_Guide_To_Product [ label = "user asks to be \nguided to product" ];
+        F_Follow -> F_Wait_Employee  [ label = "unexpected collision \nbumper event\nDO: notify employee" ];
+        F_Customer_Stop -> F_Follow [ label = "distance to \ncustomer to big"]
+        F_Customer_Stop -> F_Wait [ label = "loses user legs \nDO: show warning" ];
+        
+        F_Guide_To_Product -> F_Nav_Error [ label = "bumper event\nDO: notify employee" ];
+        F_Guide_To_Product -> F_Customer_Stop [ label = "arrives at product\nDO: inform customer" ];
+        
+        F_Nav_Error -> F_Follow [ label = "employee \nreorients robot" ];
+        F_Wait_Employee -> F_Follow [ label = "employee \nreorients robot" ];
     }
-
-    // BASE
-    START -> Base [ label = "initialized" ];
-    Base -> Login [ label = "sees customer card" ];
-    Login -> Follow [ label = "customer chooses follow" ];
-    Login -> Auto_Shop [ label = "customer chooses to have robot shop autonomously" ];
-
-    Follow -> Checkout [ label = "User hits checkout button" ];
-    Auto_Shop -> Checkout [ label = "0 remaining items on list" ];
-    Checkout -> Base [ label = "customer has removed all items from cart" ];
 
     // AUTOSHOPPER
     subgraph cluster_autoshop {
         label = "autoshop cluster";
         node [style=filled, color=lightgrey];
-        Auto_Shop -> Auto_Nav_To_Product [ label = "robot chooses item to find" ];
-
-        Auto_Nav_To_Product -> Auto_Wait [ label = "ask user to put item in cart" ];
-        Auto_Wait -> Auto_Register [ label = "fiducial detected" ];
-        Auto_Register -> Auto_Shop [ label = "no error in product registration" ];
-        Auto_Register -> Auto_Register [ label = "can't recognize fiducial" ];
-        // TODO nav error
-
+        A_Shop -> A_Nav_To_Product [ label = "robot chooses \nitem to find" ];
+        A_Nav_To_Product -> A_Wait [ label = "ask user to scan [item] \nand put it in the cart" ];
+        A_Nav_To_Product -> A_Wait_Employee [ label = "unexpected collision \nbumper event\nDO: notify employee" ];
+        A_Wait_Employee -> A_Nav_To_Product [ label = "employee \nreorients robot" ];
     }
+    
+    // ITEMDETECTION
+    subgraph cluster_itemregister {
+        label = "itemregister cluster";
+        node [style=filled, color=lightgrey]; 
+        F_Customer_Stop -> I_Register [ label = "fiducial detected"]
+        A_Wait -> I_Register [ label = "fiducial detected" ];
+        I_Register -> I_Wait_Empl_Reg [ label = "can't recognize \nfiducial \nDO: noise + show message \n+inform employee" ];
+        I_Wait_Empl_Reg -> I_Register [ label = "employee added \n fiducial" ];
+        I_Register -> I_Wait_Item_Cart [ label = "no error in product \nregistration / DO: Beep"]
+        I_Wait_Item_Cart -> I_Wait_Done [ label = "user puts item \ninto cart" ];
+        I_Register -> I_Warning [ label = "shopping mode == follow \nproduct warning \n(balance, allergy) \ \nDO: noise + show message" ];
+        I_Wait_Done -> A_Shop [ label = "shopping mode == auto \nand robot waited two sec." ];
+        I_Wait_Done -> F_Customer_Stop [ label = "shopping mode == follow \nand robot waited two sec." ];
+        I_Warning -> F_Customer_Stop [ label = "user acknowledges \nwarning" ];
+    }
+    
+    // BASE
+    START -> Base [ label = "initialized" ];
+    Base -> Login [ label = "sees customer card / \nDO: beep + welcoming" ];
+    Login -> F_Follow [ label = "customer chooses follow \nset shopping mode = follow" ];
+    Login -> A_Shop [ label = "customer chooses to have \nrobot shop autonomously \nset shopping mode = auto" ];
+    F_Customer_Stop -> Checkout [ label = "User scans member card \nDO: inform customer" ];
+    A_Shop -> Checkout [ label = "0 remaining \nitems on list \nDO: inform customer" ];
+    Checkout -> Base [ label = "customer has removed \nall items from cart" ];
+    F_Timeout -> Base [ label = "employee removed items \nand reseted robot" ]
 }
