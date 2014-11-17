@@ -22,7 +22,7 @@ digraph finite_state_machine {
     // FOLLOW
     
     subgraph cluster_follow {
-        label = "FOLLOW";
+        label = "Subgraph: FOLLOW\nMode where robot follows customer";
         F_invisible_start [ style=invis ]
         F_invisible_end [ style=invis ]
         F_Error [shape=doublecircle]
@@ -49,7 +49,7 @@ digraph finite_state_machine {
 
     // AUTOSHOPPER
     subgraph cluster_autoshop {
-        label = "AUTONOMOUS";
+        label = "Subgraph: AUTONOMOUS\nMode where robot guides customer toproducts on shopping list";
         A_invisible_start [ style=invis ]
         A_invisible_end [ style=invis ]
         A_Error [shape=doublecircle]
@@ -66,7 +66,7 @@ digraph finite_state_machine {
     
     // GUIDE TO PRODUCT
     subgraph cluster_guide {
-        label = "GUIDE";
+        label = "Subgraph: NAVIGATE\nRobot moves to specific location on map";
         G_invisible_start [ style=invis ]
         G_invisible_end [ style=invis ]
         G_Error [label="FATAL\nERROR"]
@@ -79,17 +79,6 @@ digraph finite_state_machine {
         G_Navigate -> G_Checkout[ label = "Navigation goal\n reached" ]
         G_Checkout -> G_invisible_end
     }
-    
-    // ITEMDETECTION
-    subgraph cluster_itemregister {
-        label = "PRODUCT_FIDUCIAL\n (";
-        I_secret_node_in [style=invis]
-        I_secret_node_out [style=invis]
-        I_secret_node_in -> I_Start
-        I_Start -> I_secret_node_out [ label="Not listening to fiducials\nDO: ignore" ]
-        I_Start -> I_End [ label = "Listening to fiducials,\nno product warnings\nDO: Beep\nDO: Register Product"]
-        I_Start -> I_End [ label = "Listening to fiducials,\nbalance or\nallergy warning\nDO: noise\nDO:display message\nDO: do not register product" ];
-        I_End -> I_secret_node_out
-    }
+
     
 }
