@@ -1,0 +1,20 @@
+digraph finite_state_machine {
+
+        label = "Subgraph: NAVIGATE\nRobot moves to specific location on map";
+        G_invisible_start [ style=invis ]
+        G_invisible_end [ style=invis ]
+        G_Error [label="FATAL\nERROR"]
+        G_Error [shape=doublecircle]
+        G_Checkout [label="CHECKOUT"]
+        G_invisible_start -> G_Navigate 
+        G_Navigate -> G_Wait [ label = "Something blocks\nway" ];
+        G_Wait -> G_Navigate [ label = "Way no\nlonger blocked" ]; 
+        G_Navigate-> G_Error  [ label = "Navigation error\n(bumper event)\nDO:wait for employee\nto reset robot" ];
+        G_Wait -> G_Error  [ label = "Timeout/bumper event\nDO:wait for employee\nto reset robot" ];
+        
+        G_Navigate -> G_Checkout[ label = "Navigation goal\n reached" ]
+        G_Checkout -> G_invisible_end
+
+
+    
+}

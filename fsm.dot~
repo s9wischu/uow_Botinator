@@ -57,7 +57,7 @@ digraph finite_state_machine {
         A_Error [label="FATAL\nERROR"]
         A_invisible_start -> A_Start
         A_NAVIGATE [label="NAVIGATE"]
-        A_Wait -> A_Start [ label="Item scanned" ]
+        A_Wait -> A_Start [ label="Item Scanned" ]
         A_Start -> A_NAVIGATE [ label="More items on list\nDO: Select next item" ]
         A_NAVIGATE -> A_Wait [ label = "Navigation\nsuccessful" ];
         A_NAVIGATE -> A_Error  [ label = "Navigation error\n(bumper event)\nDO:wait for employee\nto reset robot" ];

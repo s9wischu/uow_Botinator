@@ -1,0 +1,15 @@
+digraph finite_state_machine {
+
+        label = "Subgraph: AUTONOMOUS\nMode where robot guides customer to products on shopping list";
+        A_invisible_start [ style=invis ]
+        A_invisible_end [ style=invis ]
+        A_invisible_start -> A_Start
+        A_NAVIGATE [label="NAVIGATE"]
+        A_Wait -> A_Start [ label="Item scanned" ]
+        A_Start -> A_NAVIGATE [ label="More items on list\nDO: Select next item" ]
+        A_NAVIGATE -> A_Wait [ label = "Navigation\nsuccessful" ];
+        A_Start -> A_invisible_end [ label = "No more items\non list" ]
+
+
+    
+}
