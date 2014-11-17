@@ -5,9 +5,10 @@ digraph finite_state_machine {
         A_invisible_end [ style=invis ]
         A_invisible_start -> A_Start
         A_NAVIGATE [label="NAVIGATE"]
-        A_Wait -> A_Start [ label="Item scanned" ]
         A_Start -> A_NAVIGATE [ label="More items on list\nDO: Select next item" ]
-        A_NAVIGATE -> A_Wait [ label = "Navigation\nsuccessful" ];
+        A_NAVIGATE -> A_Wait_1 [ label = "Navigation\nsuccessful" ];
+        A_Wait_1 -> A_Wait_2 [ label="Item scanned" ]
+        A_Wait_2 -> A_Start [ label="Customer says\n'I am ready'"]
         A_Start -> A_invisible_end [ label = "No more items\non list" ]
 
 
