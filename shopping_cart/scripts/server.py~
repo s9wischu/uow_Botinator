@@ -1,0 +1,214 @@
+#!/usr/bin/env python
+
+# for kinect image stream
+# web_video_server package
+
+import roslib
+roslib.load_manifest('rospy')
+roslib.load_manifest('actionlib')
+roslib.load_manifest('actionlib_msgs')
+roslib.load_manifest('geometry_msgs')
+roslib.load_manifest('trajectory_msgs')
+
+
+import rospy
+import threading
+from actionlib import SimpleActionClient
+from sensor_msgs.msg import JointState
+from geometry_msgs.msg import (
+    Twist,
+    Vector3,
+    Point,
+    PoseWithCovarianceStamped
+)
+from trajectory_msgs.msg import (
+    JointTrajectoryPoint
+)
+from sound_play.msg import SoundRequest
+
+#from sound_play.libsoundplay import SoundClient
+
+
+
+import BaseHTTPServer
+import json
+import math
+import os
+import urlparse
+from mimetypes import types_map
+from visualization_msgs.msg import Marker
+
+
+mobile_base_velocity = None
+sound_client = None
+
+class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+    def do_GET(self):
+        global publisher
+        query_string = urlparse.urlparse(self.path).query
+        parameters = urlparse.parse_qs(query_string)
+
+        if 'type' not in parameters:
+            try:
+                if self.path == "/":
+                    self.path = "/index.html"
+                elif self.path == "favicon.ico":
+                    return
+                elif self.path == "/map.gif":
+                    # Draw robot position on map and send image back
+                    self.return_map()
+                fname,ext = os.path.splitext(self.path)
+                print "Loading file", self.path
+                with open(os.path.join(os.getcwd(),self.path[1:])) as f:
+                    self.send_response(200)
+                    self.send_header('Content-type', types_map[ext])
+                    self.end_headers()
+                    self.wfile.write(f.read())
+                return
+            except IOError:
+                self.send_error(404)
+                return
+
+        command_type = parameters['type'][0]
+        
+        if command_type == 'base':
+            base_x = 0.0
+            if 'x' in parameters:
+                base_x = float(parameters['x'][0])
+            base_y = 0.0
+            if 'y' in parameters:
+                base_y = float(parameters['y'][0])
+            base_z = 0.0
+            if 'z' in parameters:
+                base_z = float(parameters['z'][0])
+            twist_msg = Twist()
+            twist_msg.linear = Vector3(base_x, base_y, 0.0)
+            twist_msg.angular = Vector3(0.0, 0.0, base_z)
+            mobile_base_velocity.publish(twist_msg)
+
+        elif command_type == 'speak':
+            text = parameters['say'][0]
+            sr = SoundRequest()
+            sr.sound = -3 #Say text
+            sr.command = 1 #Play once
+            sr.arg = text
+            publisher.publish(sr)
+            #os.system("espeak -s 155 -a 200 '" + text + "' ")
+
+
+        # response
+        self.send_response(204)
+        return
+
+    def log_message(self, format, *args):
+
+        return
+
+    def return_map(self):
+        global robot_pos_offset, robot_angle_offset, robot_pos_init
+
+        # Read blank_map and save to map
+        import Image, ImageDraw
+        im = Image.open("blank_map.gif")
+        draw = ImageDraw.Draw(im)
+        
+        dx = robot_pos[0] - robot_pos_init[0]
+        dy = robot_pos[1] - robot_pos_init[1]
+        dtheta = - robot_angle_offset
+        from math import sin, cos
+        ddx = dx * cos(dtheta) + dy * sin(dtheta)
+        ddy = dx * sin(dtheta) - dy * cos(dtheta)
+        
+        x = 40.0 * (robot_pos_init[0] + robot_pos_offset[0] + ddx)
+        y = 40.0 * (robot_pos_init[1] + robot_pos_offset[1] + ddy)
+        
+        print x,y
+        draw.ellipse((x-10,y-10,x+10,y+10), fill=128)
+        the = robot_angle + robot_angle_offset
+        from math import cos, sin
+        print the
+        draw.line((x,y,x+15*cos(-the), y + 15*sin(-the)), fill=192)
+        im.save("map.gif")
+
+robot_pos = (0, 0)
+robot_angle = 0
+
+robot_pos_init = (0,0)
+
+robot_pos_offset = (0, 0)
+robot_angle_offset = 0
+
+first = True
+def odom_callback(data):
+    global robot_pos_offset, robot_angle_offset
+    global first
+    global robot_pos, robot_angle, robot_pos_init
+    robot_angle = get_angle(data)
+    robot_pos = get_coords(data)
+    if first:
+        # Desired position: (1.3, 4.2); Desired angle: 2.0
+        robot_pos_offset = (7.8 - robot_pos[0], 4 - robot_pos[1])
+        robot_angle_offset = 3.14 - robot_angle
+        robot_pos_init = robot_pos
+        first = False
+        print "Offset position:", robot_pos_offset, "offset angle:", robot_angle_offset
+    
+def get_angle(pose):
+    from tf.transformations import euler_from_quaternion
+    orient = pose.pose.pose.orientation
+    return euler_from_quaternion([orient.x, orient.y, orient.z, orient.w])[2]
+    
+def get_coords(pose):
+    return (pose.pose.pose.position.x, pose.pose.pose.position.y)
+
+
+def initialize_robot():
+    global mobile_base_velocity
+    mobile_base_velocity = rospy.Publisher('/mobile_base/commands/velocity', 
+                                           Twist, queue_size=10)
+    
+if __name__ == '__main__':
+    global publisher
+    server_address = ('', 31415)
+    httpd = BaseHTTPServer.HTTPServer(server_address, RequestHandler)
+    #httpd.timeout = 5  # set timeout to 5 seconds to check for shutdow
+
+    rospy.init_node('http_server_node', anonymous=True)
+    
+    # initialize action clients and publishers
+    # mobile_base_velocity = rospy.Publisher('/base_controller/command', Twist)
+
+    initialize_robot()
+    #sound_client = SoundClient()
+
+    print "HTTP server started at {}:{}".format(httpd.server_name, 
+                                                httpd.server_port)
+    
+    publisher= rospy.Publisher('/robotsound', SoundRequest, queue_size=10)
+    
+    """
+    TODO: publish an initial position so that the robot shows up in the right place on the map
+    we need a place in the room where we know the pixel (x,y) values and that the robot
+    is pointing in a known direction
+    
+    initialpose_publisher = rospy.Publisher('/initialpose', PoseWithCovarianceStamped, queue_size=10)
+    msg = PoseWithCovarianceStamped()
+    msg.pose.pose.position.x = BASE_X
+    msg.pose.pose.position.y = BASE_Y
+    msg.pose.pose.position.z = 0
+    msg.pose.pose.orientation = QUAT
+    msg.pose.covariance # need to set rest of message
+    
+    
+    initialpose_publisher.publish(msg)
+    """
+    
+    # subscribe to odom_combined
+    odom_sub = rospy.Subscriber('/robot_pose_ekf/odom_combined', PoseWithCovarianceStamped, odom_callback) 
+
+    # spin
+    while not rospy.is_shutdown():
+        httpd.handle_request()
+
+
+    print "\nHTTP server stopped"

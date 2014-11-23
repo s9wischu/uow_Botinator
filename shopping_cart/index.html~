@@ -1,0 +1,238 @@
+<!doctype html>
+<html>
+  <head>
+    <title>ROBOGUI v1</title>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+    <script src="js/main.js"></script>
+    <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/main.css">
+    <link href='http://fonts.googleapis.com/css?family=Roboto:400,300' rel='stylesheet' type='text/css'>
+    <link href="./css/main.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="header clearfix">
+      <h1 class="pull-left">Shopping Cart 2.0</h1>
+    </div>
+    <table>
+      <tr>
+        <td>
+          <!-- Radio Buttons -->
+          <div id="radio" class="panel panel-default">
+            <div class="panel-heading">
+              <h4 class="panel-title">
+                <a class="accordion-toggle" data-toggle="collapse" href="#collapseOne">
+                Robo Brain (things that the robot cares about)
+                </a>
+              </h4>
+            </div>
+            <div id="collapseOne" class="panel-collapse collapse in">
+              <div class="video">
+                <form name="modeform">
+                <textarea rows="14" cols="50">
+                    </textarea>
+                <!-- 
+                  <input type="radio" id="radiobutton1" name="mode" value="manual" checked>Manual Movement<br>
+                  <input type="radio" id="radiobutton2" name="mode" value="map">Move to Map Location<br>
+                  <input type="radio" id="radiobutton3" name="mode" value="follow">Follow Person<br>
+                  </form>
+                  
+                  <script>
+                  var rad = document.modeform.mode;
+                  var prev = null;
+                  for(var i = 0; i < rad.length; i++) {
+                      rad[i].onclick = function() { mode_changed($('input[name="mode"]:checked').val()); };
+                  }
+                  </script>
+                  
+                  -->
+              </div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <!-- Webcam -->
+          <div class="panel-group" id="accordion">
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <h4 class="panel-title">
+                <a class="accordion-toggle" data-toggle="collapse" href="#collapseThree">
+                Webcam Image
+                </a>
+              </h4>
+            </div>
+            <div id="collapseThree" class="panel-collapse collapse in">
+              <div class="panel-body">
+                <div class="controls">
+                  <div class="video">
+                    <table>
+                      <tr>
+                      </tr>
+                      <tr>
+                        <img id="left-view" src="http://localhost:8080/stream?topic=/v4l/camera/image_raw" class="video"></img>
+                      </tr>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <!-- Map Image -->
+          <div class="panel-group" id="accordion">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h4 class="panel-title">
+                  <a class="accordion-toggle" data-toggle="collapse" href="#collapseMap">
+                  Map
+                  </a>
+                </h4>
+              </div>
+              <div id="collapseMap" class="panel-collapse collapse in">
+                <div class="panel-body">
+                  <div class="controls">
+                    <table>
+                      <tr>
+                      </tr>
+                      <tr>
+                        <img src="http://localhost:31415/map.gif" id="map_image" />
+                      </tr>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <!-- Sound -->
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <h4 class="panel-title">
+                <a class="accordion-toggle" data-toggle="collapse" href="#collapseSix">
+                Sound Control
+                </a>
+              </h4>
+            </div>
+            <div id="collapseSix" class="panel-collapse collapse in">
+              <div class="video">
+                <div class="pull-right say-something">
+                  <label for="speak-text">Say something:</label>
+                  <input id="speak-text" type="text" />
+                  <button class="btn btn-primary" onclick="speak_command()"><span class="glyphicon glyphicon-bullhorn"></span></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <!-- Webcam -->
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <h4 class="panel-title">
+                <a class="accordion-toggle" data-toggle="collapse" href="#collapseFour">
+                Kinect Image
+                </a>
+              </h4>
+            </div>
+            <div id="collapseFour" class="panel-collapse collapse in">
+              <div class="panel-body">
+                <div class="controls">
+                  <table>
+                    <tr>
+                    </tr>
+                    <tr>
+                      <img id="left-view" src="http://localhost:8080/stream?topic=/camera/rgb/image_raw" class="video"></img>
+                    </tr>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <!-- Log window -->
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <h4 class="panel-title">
+                <a class="accordion-toggle" data-toggle="collapse" href="#collapseSix">
+                Events
+                </a>
+              </h4>
+            </div>
+            <div id="collapseSix" class="panel-collapse collapse in">
+              <div class="video">
+                <div class="log-window" id="log" style="height:300px;border:1px solid #ccc;font:16px/26px Georgia, Garamond, Serif;overflow:auto;">
+                </div>
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td>
+        </td>
+        <td>
+          <!-- Movement Controls -->
+          <div class="panel panel-default" >
+            <div class="panel-heading">
+              <h4 class="panel-title">
+                <a class="accordion-toggle" data-toggle="collapse" href="#collapseFive">
+                Controls
+                </a>
+              </h4>
+            </div>
+            <div id="collapseFive" class="panel-collapse collapse in">
+              <div class="panel-body" id="block-manual">
+                <div class="controls">
+                  <div class="pull-left control">
+                    <table>
+                      <tr>
+                        <td>
+                          <table>
+                            <tr>
+                              <td></td>
+                              <!-- forward -->
+                              <td><button class="btn btn-primary" onmousedown="base_command_start(0.15,0,0)" onmouseup="base_command_end()">
+                                <span class="glyphicon glyphicon-chevron-up"></span></button>
+                              </td>
+                              <td></td>
+                            </tr>
+                            <tr>
+                              <!-- rotate counter clock wise -->
+                              <td><button class="btn btn-primary" onmousedown="base_command_start(0, 0, 0.5)" onmouseup="base_command_end()">
+                                <span class="glyphicon glyphicon-share-alt icon-flipped"></span></button>
+                              </td>
+                              <td></td>
+                              <!-- rotate clock wise -->
+                              <td><button class="btn btn-primary" onmousedown="base_command_start(0, 0, -0.5)" onmouseup="base_command_end()">
+                                <span class="glyphicon glyphicon-share-alt"></span></button>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td></td>
+                              <!-- backward -->
+                              <td><button class="btn btn-primary" onmousedown="base_command_start(-0.15, 0, 0)" onmouseup="base_command_end()">
+                                <span class="glyphicon glyphicon-chevron-down"></span></button>
+                              </td>
+                              <td></td>
+                            </tr>
+                          </table>
+                      </tr>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </td>
+        <td>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
