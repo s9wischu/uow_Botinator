@@ -1,0 +1,54 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+  <head>
+    <title>CartBot</title>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="//ajax.googleapis.com/ajaxselected/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" />
+    <link href="http://fonts.googleapis.com/css?family=Roboto:400,300" rel="stylesheet" type="text/css" />
+    <link href="//localhost:31415/html/style.css" rel="stylesheet" type="text/css" />
+    <script language="javascript">
+   
+        /* Check regularly with the server if server has returned to base position */
+        function on_update() {
+           $.get("/", { type : "is-base" }).done(function (data) {
+               if (data.isBase) {
+                   window.location.href = "/html/start.html"; 
+               }   
+           }); 
+        }
+        
+        $( document ).ready(function() { 
+            update_interval = setInterval(function() { on_update(); }, 500); 
+        });
+        
+    </script>
+    <style>
+        .centered {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 50%; 
+          text-align: center; 
+        }
+            
+    
+    </style>
+  </head>
+  </div>
+    <div id="main">
+    
+  <body>
+  <div id="header">
+    Please wait ...
+      <div class="centered">
+      <h2>
+      Please Wait For Turtlebot<br/>To Return To Its Base Position.<br style="margin-bottom:20px" />
+      Turtlebot Will Be There<br/>For You Soon.
+      </h2>
+      </div>
+    </div>
+  </body>
+</html>
