@@ -1,0 +1,34 @@
+<launch>
+    <include file="$(find turtlebot_bringup)/launch/minimal.launch"/>
+    <include file="$(find turtlebot_bringup)/launch/3dsensor.launch"/>
+
+    <node name="robot_pose_ekf" pkg="robot_pose_ekf" type="robot_pose_ekf" args="-d $(find robot_pose_ekf)/robot_pose_ekf.launch" />
+<!--
+
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find turtlebot_rviz_launchers)/rviz/robot.rviz" />
+    <include file="$(find sound_play)/soundplay_node.launch"/>
+    <include file="$(find gscam)/v4l.launch"/>
+
+
+
+    <node
+        pkg = "web_video_server"
+        type = "web_video_server"
+        name = "web_video"
+    />
+
+
+    <node
+        pkg = "robot_pose_ekf"
+        type = "robot_pose_ekf"
+        name = "ekf"
+    />
+
+
+    <node
+        pkg = "beginner_tutorials"
+        type = "server.py"
+        name = "server"
+    />
+-->
+</launch>
