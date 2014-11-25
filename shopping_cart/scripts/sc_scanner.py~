@@ -1,14 +1,17 @@
 #!/usr/bin/env python
 
-## read feducials and creat depending on the feducial number Scan_Items
+## read fiducials and create Scan_Items (depending on the fiducial number)
 ## which means we have an item interaction or Scan_User which means we have
 ## an user interaction
 
 import rospy
-from beginner_tutorials.msg import Scan_Item
-from beginner_tutorials.msg import Scan_User
+from std_msgs.msg import String
 from ar_track_alvar.msg import AlvarMarkers
 from visualization_msgs.msg import Marker
+
+
+import server
+import structures
 
 pubItem = 0
 pubUser = 0
@@ -17,34 +20,27 @@ pubUser = 0
 itemStart = 8
 
 def callback(scan):
-    global pubItem, pubUser
+    global lastFiducialTime
+    from time import time
     
-    if scan.id < itemStart: # publish user scan
-        item = Scan_Item()
-        item.item = scan.id
-        pubItem.publish(item)
-        #rospy.loginfo("item")
-    else: # publish item scan
-        user = Scan_User()
-        user = scan.id
-        pubUser.publish(user)
-        #rospy.loginfo("user")
-
+    TIME_BETWEEN_SCANS = 2.5
+    
+    # Make sure that fiducials are not registered too often
+    if time() - lastFiducialTime > TIME_BETWEEN_SCANS:
+        server.ServerData.controller.onFiducial(scan.id)
+        lastFiducialTime = time()
+   
 
 def scanner():
-    global pubItem, pubUser
-    pubItem = rospy.Publisher('scan_item', Scan_Item, queue_size=10)
-    pubUser = rospy.Publisher('scan_user', Scan_User, queue_size=10)
+    global lastFiducialTime
+    
+    lastFiducialTime = 0
     
     rospy.init_node('scanner', anonymous=True)
-    #r = rospy.Rate(10) # 10hz
-
-    #rospy.Subscriber("/ar_tracl_avar", AlvarMarkers, callback)
     rospy.Subscriber('visualization_marker', Marker, callback)
+    
     rospy.spin()
-    
-    rospy.loginfo("blub2")
-    
+   
 
         
 if __name__ == '__main__':
