@@ -4,7 +4,7 @@
     <node name="robot_pose_ekf" pkg="robot_pose_ekf" type="robot_pose_ekf" args="-d $(find robot_pose_ekf)/robot_pose_ekf" />
     <include file="$(find sound_play)/soundplay_node.launch"/>
 
-<!--    <include file="$(find webcam_ar_track)/launch/webcam_indiv.launch"/> -->
+<   <include file="$(find webcam_ar_track)/launch/webcam_indiv.launch"/>
 
     <include file="$(find gscam)/v4l.launch"/>
     <node name="web_video_server" pkg="web_video_server" type="web_video_server" args="-d $(find web_video_server)/web_video_server" />

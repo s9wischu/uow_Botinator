@@ -1,0 +1,159 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+  <head>
+    <title>CartBot</title>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="//ajax.googleapis.com/ajaxselected/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" />
+    <link href="/html/style.css" rel="stylesheet" type="text/css" />
+    <script language="javascript">
+    
+      // Set an interval at which updates are requested from the server
+      map_interval = null; 
+      $( document ).ready(function() { 
+          beforeLoading(); 
+          requestSearchResult(); 
+      });
+      
+      function beforeLoading() {
+          // Show message that no products have been found. 
+          $("#item-title-bar").html(""); 
+          $("#product-view").css("visibility", "hidden"); 
+          // List on left-hand size is empty
+          $("#search-result-list").html(""); 
+          // Disable "Lead me to Item" button: 
+          $("#btn_guide").attr("disabled", "disabled"); 
+      }
+      
+      function onNoProductsFound () {
+          // Show message that no products have been found. 
+          $("#top-right").html("<div style='text-align:center;padding-top:200px'><h3>No products found</h3></div>");
+          // List on left-hand size is empty
+          $("#search-result-list").html(""); 
+          // Disable "Lead me to Item" button: 
+          $("#btn_guide").attr("disabled", "disabled"); 
+      }
+      
+      function requestSearchResult() {
+      
+           // Request search on server and handle results. 
+           var searchString = getUrlVars()["search_string"]; 
+           $.get("/", {type: "search", search_string: searchString}).done(function(data) {
+
+               if (data.items.length == 0) {
+                   // No products found. 
+                   onNoProductsFound();  
+               } else {
+                   // Found products. Display list of left-hand side and request
+                   // details about top item from server. 
+                   $("#search-result-list").html(""); 
+                   for (i = 0; i < data.items.length; i++) {
+                       var item = data.items[i];
+                       $("#search-result-list").append("<div style=\"display:block;\" class=\"item\">" + item + "</div>");  
+                   } 
+                   
+                   $(".item").off("click"); 
+                   $(".item").click(function() {
+                       requestItem($( this ).find(".list-item").attr("fiducial")); 
+                   });  
+                   
+                   $("#item-title-bar").html(""); 
+                   
+               }
+           }); 
+      }
+      
+      function requestItem(fiducialnum) {
+        $.get("/", {type: "get-item", fiducial: fiducialnum}).done (function(data) {
+            setItem(data.item)
+        }); 
+        
+      }
+      
+      function setItem(item) {
+          $("#product-view").css("visibility", "visible"); 
+          $("#btn_guide").removeAttr("disabled");
+          $("#item-title-bar").html(item.name); 
+          $("#field_amount").html(item.amount); 
+          $("#field_description").html(item.description); 
+          $("#productimage").attr("src", item.image_path); 
+          $("#product-view").attr("current_item_id", item.id); 
+          $("#product-view").attr("fiducial", item.fiducial); 
+          $("#field_allergies").html(item.ingredients); 
+      }
+      
+      function onGuideButtonPressed() {
+        $.get("/", {type: "guide-to", fiducial: $("#product-view").attr("fiducial")}).done (function(data) {
+            setItem(data.item)
+        }); 
+        window.location.href = "/html/guided.html"
+      }
+      
+      function onCancelButtonPressed() {
+        window.location.href = "/html/product_list.html"
+      }
+      
+    
+      /* from http://papermashup.com/read-url-get-variables-withjavascript/*/
+      function getUrlVars() {
+          var vars = {};
+          var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
+              vars[key] = value;
+          });
+          return vars;
+      }
+      
+    </script>
+  </head>
+  <body>
+    <div id="main" >
+      <div id="header">
+        Search Results
+      </div>
+      <div id="body">
+        <div id="left">
+        <div id="search-result-list">
+        
+        </div>
+        </div>
+        <div id="right">
+          <div id="top-right">
+            <div id="item-title-bar">
+              (No Product to show)
+            </div>
+            <div id="product-view">
+              <img id="productimage" src="../img/none.jpg" alt="No image available"  id="field_image"/>  
+              <div id="product-info">
+                <table style="width:100%" >
+                  <tr>
+                    <th class="thitem" >Description:</th>
+                    <td class="thitem" id="field_description">(No description to show)</td>
+                  </tr>
+                  <tr>
+                    <th class="thitem">Ingredients:</th>
+                    <td class="thitem" id="field_allergies">(No ingredients to show)</td>
+                  </tr>
+                  <tr>
+                    <th class="thitem">Price:</th>
+                    <td class="thitem" id="field_amount">(No price to show)</td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div id="bottom-right">
+            <div style="position:absolute; right:0px;">
+              <td><button id="btn_guide" class="btn" onmouseup="onGuideButtonPressed()" >
+                <span>Lead me to Item</span></button>
+              </td>
+              <td><button id="btn_cancel" class="btn" onmouseup="onCancelButtonPressed()">
+                <span>Return to Shopping Mode</span></button>
+              </td>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,175 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+  <head>
+    <title>CartBot</title>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="//ajax.googleapis.com/ajaxselected/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" />
+    <link href="/html/style.css" rel="stylesheet" type="text/css" />    
+    <script language="javascript">
+      // Send and handle updates
+      function on_update() {
+          
+          $.get("/", {type: "update"} ).done(function(data) {
+              
+              if (!data.hasCustomer) {
+                  alert("No customer logged in -- returning to start mode."); 
+                  window.location.href = "/html/start.html"
+              }
+              
+              if (data.errorState == "lost-legs") {
+                  window.location.href= "/html/lost_legs.html"
+              }
+              
+              if (data.restarted) {
+                  // Remove all items from the list if the server has been restarted. 
+                  $("#item-bar").html(""); 
+                  $("#product-view").css("visibility", "hidden"); 
+                  $("#item-title-bar").html(""); 
+               
+              }
+          
+              // Add new items to the item bar
+              for (i = 0; i < data.numberNew; i++) {
+                  $("#item-bar").append("<div style=\"display:block;\" class=\"item\">" + data.html[i] + "</div>");  
+              }
+              
+              $(".item").click(function() {
+                  $.get("/", {type : "item-clicked", itemClicked : $( this ).find(".list-item").attr("fiducial")}); 
+              });
+              
+              // Change item on right-hand side if changed: 
+              if (data.hasNewHighlighted == true) {
+                  if (data.item.name != "null") {
+                      setItem(data.item); 
+                  }
+              } 
+              
+              for (i = 0; i < data.messages.length; i++) {
+                  alert(data.messages[i]); 
+              }
+              
+              $("#total-price").html(data.total);
+          });
+      }
+      
+      function setItem(item) {
+          $("#product-view").css("visibility", "visible"); 
+          $("#item-title-bar").html(item.name); 
+          $("#field_amount").html(item.amount); 
+          $("#field_description").html(item.description); 
+          $("#productimage").attr("src", item.image_path); 
+          $("#product-view").attr("current_item_id", item.id); 
+          $("#product-view").attr("fiducial", item.fiducial); 
+          $("#field_allergies").html(item.ingredients); 
+      }
+      
+      function select_item() {
+          $("#product-view").css("visibility", "hidden"); 
+          $("#item-title-bar").html(""); 
+          
+      }
+      
+      function remove_item() {
+          // Read id of item
+          var id = $("#product-view").attr("fiducial"); 
+          $.get("/", {type: "remove-item", remove_id: id.toString()}).done(function(data) {
+              alert ("Item removed."); 
+          }); 
+          $("#product-view").css("visibility", "hidden"); 
+          $("#item-title-bar").html(""); 
+          
+      }
+      
+      function checkout() {
+          var r = confirm("Are you sure you would like to check out? " +
+                          "Total amount due: " + $("#total-price").html().toString());
+          if (r == true) {
+              $.get("/", {type: "checkout"}).done(function(data) {
+                  alert("Total amount was: " + data.amount + "\n" + 
+                        "New account balance on customer card: " + data.balance + "\n\n" +
+                        "Thank you for shopping with us!"); 
+                  
+                  window.location.href = "/html/gohome.html"
+              }); 
+          } else {
+            
+          } 
+      }
+      
+      
+      // Set an interval at which updates are requested from the server
+
+      $( document ).ready(function() {
+          update_interval = setInterval(function() { on_update(); }, 500); 
+          $("#item-title-bar").html("");  
+      });
+      
+      
+    </script>
+
+  </head>
+  <body>
+    <div id="main" >
+      <div id="header">
+        CartBot
+        
+      <div style="position:absolute; right: 0px; top:45px">
+      <form class="form-inline" role="form" action="/html/search.html" method="GET">
+      <div class="form-group">
+        <label for="inputPassword2" class="sr-only">Search</label>
+        <input type="search" class="form-control" id="inputPassword2" name="search_string" placeholder="Product Name">
+      </div>
+      <button type="submit" class="btn btn-primary">Search</button>
+      </form>
+      </div>
+      
+      </div>
+      
+      
+      <div id="body">
+        <div id="left">
+          <div id="item-bar">
+          </div>
+          <div id="total-bar">
+           <div id="total-price">$0.00</div>
+           <td><button class="btn" style="position:absolute;left:0px" onmousedown="checkout()" onmouseup="base_command_end()">
+            <span>Checkout</span></button>
+            </td>
+          </div>
+        </div>
+        <div id="right">
+          <div id="top-right">
+            <div id="item-title-bar">
+            </div>
+            <div id="product-view" style="visibility:hidden;" >
+              <img id="productimage" src="../img/none.jpg" alt="No image available"  id="field_image"/>  
+              <div id="product-info">  
+              <table style="width:100%" >
+                <tr>
+                  <th class="thitem" >Description:</th>
+                  <td class="thitem" id="field_description"></td>
+                </tr>
+                <tr>
+                  <th class="thitem">Ingredients:</th>
+                  <td class="thitem" id="field_allergies"></td>
+                </tr>
+                <tr>
+                  <th class="thitem">Price:</th>
+                  <td class="thitem" id="field_amount"></td>
+                </tr>
+              </table>
+              </div>
+            </div>
+          </div>
+          <div id="bottom-right">
+            <td><button class="btn" style="position:absolute;right:0px" onmousedown="remove_item()" onmouseup="base_command_end()">
+            <span>Remove Item</span></button>
+            </td>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
