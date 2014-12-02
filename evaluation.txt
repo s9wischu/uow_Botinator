@@ -1,0 +1,72 @@
+# Blog 9 - Project Evaluation
+
+## Functional Goals
+1. CartBot should be fully autonomous and work reliably without a human controlling it. 
+1. Employees spend less time showing products to customers
+
+We evaluate our functional goals by performing a number of scenarios and try to find the weaknesses and the cases where the system breaks. In particular, carried out the following experiments:
+
+- Is it easy to initialize the robot? 
+We wrote a launch file that starts up everything exepct the server and makes initialization easy and quick and allows us to run the server elsewhere than on the robot. 
+
+- We scan each item in the shop and our 3 customer cards. Are the AR codes recognized reliably and correctly?
+There was one misclassification (out of eight products) due to a AR-code error. This is an issue of the AR-code detector that we use. However, if such a thing happens the customer can manually remove the item from the list and re-scan the item. Scanning itself woks reliably even though sometimes, it took some seconds for the AR-scanner to recognize the item. 
+
+- We test robot in follow mode. In which cases does the robot lose track of the customer. Does it work in reasonable cases?
+We observed that the robot needs a few seconds after activation of follow mode until it actually starts following. The leg detector expects two legs which is why it does not always work when the legs are so close together that there is no gap between them. Sometimes, objects such as chairs in the background are classified as legs which can lead to the robot moving towards the wrong object. However, we programmed our robot to always follow the closest legs which rules out this problem in almost all cases. For exapmle, misclassification can occur if the legs are off-center since the quality of leg detection deteriorates in this case. Summariying, follow mode works reasonably well. The problems described above do not occur in a typical scenario. 
+
+- The robot stops at a reasonable distance when following. In particular, are there cases when it bumps into the customer?
+Stopping has worked in all tests. On the one hand, the robot stops at a distance that allows the customer to put the items in the basket easily, on the other hand it doesn't approach too closely to disturb the customer. Due to the problems mentioned above (leg detection), it can happen that the robot moves towards the wrong object and bumps into the customer. This does not happen if the legs are places well. 
+
+- Does the robot crash into shop equipment when in follow mode?
+Yes, corners are a problem if the customer moves too closely or too fast around them since the robot always moves directly towards the robot regardless of obstacles that are in the way. Therefore, customers are required to walk around corners in a bigger radius. 
+
+- Does the robot move/rotate when it is not expected to do so? In particular, does it move when the customer uses the touch screen?
+There is the problem mentioned above where the robot falsely detects legs. This case is seldom. The robot always rotates towards the customer's legs which can lead to slight movements during customer-robot interactions. 
+
+- Is the sound volume loud enough but not too loud? Is the voice understandable?
+Yes.
+
+- Is the font size on the laptop big enough and are the buttons big enough thouchscreen use?
+Text is perfectly readable for people with normal eye sight, but there might be problems, for example for elderly people. 
+
+- Can items be added to the basket and removed from it easily?
+The items we used for our tests could be added and removed easily. Due to the small basket size and half the basket being covered by the laptop in the current robot setup, it is difficult to handle bigger items. 
+
+- Is the robot stable? Does it never lose balance or stutter?
+Turtlebot is not particularly stable. The robot might tip over if it hits something (we currently do not handle bumper events). In regular use, it is perfectly stable since changes in speed are smooth. 
+
+
+
+
+
+
+
+
+
+## Usabilitz and User Experience Goals
+1. No instruction necessary (users can figure out how to use the system by themselves)
+1. Shopping should not take significantly longer. 
+1. Search functionality should help customers
+1. 
+
+
+
+
+Evaluation: Yes or No?
+- User figures out how to use robot without instruction (intuitivity)
+- System does not crash (reliability) and acts as forseen. 
+- Robot does not crash into customer (safety)
+- Robot does not crash into something else (safety / usability)
+- Users manage to scan items reliably
+- Fatal error (robot crashes / tips over ...)
+
+Interview questions
+- How likely are you to use CartBot for regular shopping? (very likely to very unlikely)
+- CartBot is intuitive to use (strongly agree to strongly disagree)
+- CartBot makes shopping more enjoyable (strongly agree to strongly disagree)
+- CartBot simplifies shopping (strongly agree to strongly disagree)
+- I find the search function useful (strongly agree to strongly disagree)
+- Is sound ouput understandable?
+- Is font big enough / contrast strong enough?
+- Are the instructions of the robot clear and understandable?
