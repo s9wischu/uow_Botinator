@@ -6,7 +6,7 @@
     <script src="//ajax.googleapis.com/ajaxselected/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
     <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
     <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" />
-    <link href="//localhost:31415/html/style.css" rel="stylesheet" type="text/css" />    
+    <link href="/html/style.css" rel="stylesheet" type="text/css" />    
     <script language="javascript">
       // Send and handle updates
       function on_update() {
@@ -119,7 +119,7 @@
       <form class="form-inline" role="form" action="/html/search.html" method="GET">
       <div class="form-group">
         <label for="inputPassword2" class="sr-only">Search</label>
-        <input type="search" class="form-control" id="inputPassword2" name="search_string" placeholder="Product Name">
+        <input type="search" class="form-control" id="inputPassword2" style="font-size:20px" name="search_string" placeholder="Product Name">
       </div>
       <button type="submit" class="btn btn-primary">Search</button>
       </form>

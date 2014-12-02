@@ -31,10 +31,10 @@
     $( document ).ready(function() { 
     
         $.get("/", { type : "get-customer-data" }).done(function (data) {     
-
+            
             if (data != null) {
                 // No error
-                $("#header").html("Welcome,"); 
+                $("#header").html("Welcome, " + data.name + "!"); 
             } else {
                 $("#header").html("You are not logged in!"); 
                 alert ("Error: No customer logged in!"); 
@@ -45,15 +45,16 @@
       
     
     </script>
-    <style>
-.centered {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 50%; 
-}
-    
+   <style>
+        .centered {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 50%; 
+          text-align: center; 
+        }
+            
     
     </style>
   </head>
@@ -63,9 +64,12 @@
     <div id="header">
     Welcome!
     </div>
+    
     <div class="centered">
-        <button onmouseup="follow()" style="margin-bottom: 10px" type="button" class="btn btn-lg btn-block">"Follow Me"</button>
-        <button onmouseup="autonomous()" type="button" class="btn btn-lg btn-block">"Bring Me To My Items"</button>
+        <h2>Please press the button to start shopping.</h2>
+        <h2>The robot will then follow you. </h2>
+        <h2>You can register items by holding their AR code in front of the webcam.</h2> 
+        <button onmouseup="follow()" style="margin-top: 50px" type="button" class="btn btn-lg btn-block">"Ready"</button>
     </div>
     
 </div>
