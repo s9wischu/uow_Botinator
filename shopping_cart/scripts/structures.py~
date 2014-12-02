@@ -85,7 +85,8 @@ class Item:
         self.description = ""
         self.imagePath ="../img/none.jpg"
         self.contains = []
-
+        self.location = (0.0, 0.0); 
+        
     # SETTERS
     def setAmount(self, amount): 
         self.amount = amount
@@ -110,6 +111,9 @@ class Item:
         
     def addContains(self, content): 
         self.contains.append(content)
+       
+    def setLocation(self, location): 
+        self.location = location
 
     # GETTERS
     def getAmount(self):
@@ -133,6 +137,9 @@ class Item:
     def getImagePath(self):
         return self.imagePath
         
+    def getLocation(self): 
+        return self.location
+        
     def getContains(self): 
         import copy
         return list(copy.deepcopy(self.contains))
@@ -150,6 +157,8 @@ class Item:
         result += str(self.getWeight())
         result += ", image="
         result += str(self.getImagePath())
+        result += ", location="
+        result += str(self.getLocation())
         result += "]"
         return result
 
@@ -169,6 +178,10 @@ class Item:
         nodeDescription.text = self.getDescription()
         nodeImagePath = xml.SubElement(node, "imagePath")
         nodeImagePath.text = self.getImagePath()
+        nodeLocationX = xml.SubElement(node, "locationX")
+        nodeLocationX.text = str(self.getLocation()[0])
+        nodeLocationY = xml.SubElement(node, "locationY")
+        nodeLocationY.text = str(self.getLocation()[1])
         for contains in self.getContains():
             nodeContains = xml.SubElement(node, "contains")
             nodeContains.text = contains
@@ -183,6 +196,9 @@ class Item:
         item.setWeight(Weight.fromXML(node.find("weight")))
         item.setDescription(node.find("description").text)
         item.setImagePath(node.find("imagePath").text)
+        x = int(float(node.find("locationX")))
+        y = int(float(node.find("locationY")))
+        item.setLocation((x, y))
         for node in node.iter("contains"):
             item.addContains(node.text)
         return item
@@ -191,7 +207,7 @@ class Item:
         """ Returns html for list item """
         from lxml.etree import ElementTree
         from xml.dom import minidom
-        root = html.parse("html/product_list_item.html").getroot()
+        root = html.parse("/home/motionlab/Desktop/git/Botinator/shopping_cart/scripts/html/product_list_item.html").getroot()
         root.get_element_by_id("field_image").attrib["src"] = self.getImagePath()
         root.get_element_by_id("field_price").text = str(self.getAmount())
         root.get_element_by_id("field_name").text = self.getName()

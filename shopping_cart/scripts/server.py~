@@ -103,7 +103,6 @@ class Controller:
         print "Customer chose 'follow' mode."
         self.speak("I will now follow you.")
         self.state = "follow"
-        # TODO: Start follow mode on robot
         self.triggerFollowPublisher.publish(True)
     
     def onChoseAutonomousMode(self): 
@@ -142,7 +141,10 @@ class Controller:
     def onGuideRequest(self, item):
         # Called when customer asked to be guided to given item. 
         self.speak("You will now be guided to the item you selected. Please follow me.")
-        print "Customer asks to be guided to '" + item.getName() + "'."
+        goal = item.getLocation()
+        print "Customer asks to be guided to '" + item.getName() + \
+              "' at location " + str(goal) + "."
+        # TODO: implement    
         
     def speak(self, text):
         soundRequest = SoundRequest()
@@ -150,7 +152,6 @@ class Controller:
         soundRequest.command = 1 #Play once 
         soundRequest.arg = text
         ServerData.pubSound.publish(soundRequest)
-
 
 
 class ServerData:
@@ -516,7 +517,7 @@ def fiducialEvent(scan):
     global lastFiducialTime
     from time import time
     
-    TIME_BETWEEN_SCANS = 4.0
+    TIME_BETWEEN_SCANS = 5.0
     
     if len(scan.markers) == 0:
         return
