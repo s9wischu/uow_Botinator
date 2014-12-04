@@ -8,7 +8,26 @@
     <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" />
     <link href="http://fonts.googleapis.com/css?family=Roboto:400,300" rel="stylesheet" type="text/css" />
     <link href="/html/style.css" rel="stylesheet" type="text/css" />
-
+ <script language="javascript">
+   
+        /* Check regularly with the server if server has returned to base position */
+        function on_update() {
+           $.get("/", { type : "error-state" }).done(function (data) {
+               if (data.errorState == "None") { 
+                   if (data.state == "follow") {
+                       window.location.href = "/html/product_list.html";
+                   } else if (data.state == "autonomous") {
+                       alert("Autonomous Shopping is not yet implemented!"); 
+                   }
+               }   
+           }); 
+        }
+        
+        $( document ).ready(function() { 
+            update_interval = setInterval(function() { on_update(); }, 500); 
+        });
+        
+    </script>
     <style>
 .centered {
   position: fixed;

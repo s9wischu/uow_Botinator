@@ -5,6 +5,7 @@ import rospy
 from people_msgs.msg import PositionMeasurementArray
 from geometry_msgs.msg import Twist, PoseWithCovarianceStamped
 from std_msgs.msg import Bool
+from kobuki_msgs.msg import BumperEvent
 import threading
 
 class Struc:
@@ -12,44 +13,88 @@ class Struc:
     THRESHOLD = 0.80
     MAX_DISTANCE = 0.75
     SPEED_X = 0.2
-    SPEED_Z = 0.6
+    SPEED_Z = 0.75
+    MIN_DISTANCE = 0.25
     currentPose = None
     currentAngle = 0.0
     legSubscriber = None
     odomSubscriber = None
-    
+    bumperSubscriber = None
+    lostPublisher = None
+    bumperPublisher = None
     currentLinSpeed = 0.0
     currentAngSpeed = 0.0
     deltaLinSpeed = 0.0
     
     running = False
-    
+    lastPerson = None
     lastMeasurement = 0
+
+    measurementsSinceLegLoss = 0
     
 def onLegMeasurement(data):
     from math import atan2, sqrt, pi
-    
+ 
     if len(data.people) == 0:
         return
         
     if Struc.currentPose == None: 
         return
-        
-    # Find closest legs that were detected wtih high reliability
-    closest = 10000000
+  
+
+    if Struc.lastPerson is None:
+        closest = 10000000
+        for d in data.people:
+            dx = d.pos.x - Struc.currentPose.x  
+            dy = d.pos.y - Struc.currentPose.y
+            distance = dx * dx + dy * dy
+            
+            if d.reliability > Struc.THRESHOLD and distance < closest:
+                closest = distance
+                Struc.lastPerson = d
+                print "Following new legs", d.object_id
+
     person = None
-    for d in data.people:
-        dx = d.pos.x - Struc.currentPose.x  
-        dy = d.pos.y - Struc.currentPose.y
-        distance = dx * dx + dy * dy
-        
-        if d.reliability > Struc.THRESHOLD and distance < closest:
-            closest = distance
-            person = d
+
+    if Struc.lastPerson is not None:
+        for d in data.people:
+            if d.object_id == Struc.lastPerson.object_id:
+                person = d
+                break
+    # Find closest legs that were detected wtih high reliability
+   
+            
+    if person is None and Struc.lastPerson is not None:
+        closest = 10000000
+        closestPerson = None
+        for d in data.people:
+            dx = d.pos.x - Struc.lastPerson.pos.x  
+            dy = d.pos.y - Struc.lastPerson.pos.y
+            distance = dx * dx + dy * dy
+
+            if distance < closest:
+                closest = distance
+                closestPerson = d
+                
+        if closest < Struc.MIN_DISTANCE and closestPerson is not None:
+            person = closestPerson
+            Struc.lastPerson = person
+            print "\t\t\t\t\tNew id:", person.object_id
             
     if person is None:
+        Struc.measurementsSinceLegLoss += 1
+        if Struc.measurementsSinceLegLoss <= 2:
+            print "IGNORED"
+            return
+        
         print "discarded"
+        Struc.lostPublisher.publish(True)
+        stopFollow()
         return
+
+    Struc.measurementsSinceLegLoss = 0
+
+    print "following", person.object_id
         
     print "Reliability",    person.reliability     
             
@@ -86,6 +131,10 @@ def onLegMeasurement(data):
     print "current speed", Struc.currentAngSpeed, Struc.currentLinSpeed
     
     
+def onBumperEvent(data):
+    Struc.bumperPublisher.publish(True)
+    stopFollow()
+
 def onOdomMeasurement(data):
     from tf.transformations import euler_from_quaternion
     Struc.currentPose = data.pose.pose.position
@@ -99,19 +148,29 @@ def onFollowModeTrigger(mode):
         stopFollow()
     
 def startFollow():
-    print "start leg following"
+    print "\t\t\tstart leg following"
     Struc.legSubscriber = rospy.Subscriber("/leg_tracker_measurements", PositionMeasurementArray, onLegMeasurement)
     Struc.odomSubscriber = rospy.Subscriber("/robot_pose_ekf/odom_combined", PoseWithCovarianceStamped, onOdomMeasurement)
     Struc.publisher = rospy.Publisher('/cmd_vel_mux/input/teleop', Twist, queue_size=10)
+    Struc.bumperSubscriber = rospy.Subscriber("/mobile_base/events/bumper", BumperEvent, onBumperEvent)
     Struc.running = True
+    Struc.currentPerson = None
     threading.Timer(0.05, sendMovementCommand).start()
     Struc.initialPosition = Struc.currentPose
-    
+    #Struc.lostPublisher.publish(False)   
+ 
 def stopFollow():
-    print "stop leg following"
+    print "\t\t\tstop leg following"
+    Struc.lastPerson = None
     Struc.running = False
+    Struc.currentLinSpeed = 0.0
+    Struc.currentAngSpeed = 0.0
+    Struc.deltaLinSpeed = 0.0
+
     Struc.legSubscriber.unregister() 
     Struc.odomSubscriber.unregister()
+    Struc.bumperSubscriber.unregister()    
+    print "\n\n\n\t\t\t\tLost Triggered\n\n\n"
     
  
 def sendMovementCommand():
@@ -145,5 +204,7 @@ def sendMovementCommand():
 if __name__ == "__main__":
     rospy.init_node('follower', anonymous=True)
     rospy.Subscriber("/ours/followModeTrigger", Bool, onFollowModeTrigger)
+    Struc.lostPublisher = rospy.Publisher('/ours/lostModeTrigger', Bool)
+    Struc.bumperPublisher = rospy.Publisher('/ours/bumperModeTrigger', Bool)
     rospy.spin()
     

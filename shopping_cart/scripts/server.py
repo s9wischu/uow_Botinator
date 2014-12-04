@@ -13,6 +13,7 @@ from sound_play.msg import SoundRequest
 import rospy
 from visualization_msgs.msg import Marker
 from ar_track_alvar.msg import AlvarMarkers
+from geometry_msgs.msg import PoseWithCovarianceStamped, Pose
 
 class Controller: 
     """ This class represents the interface between server and turtlebot. """
@@ -21,15 +22,18 @@ class Controller:
         # 'base', 'follow', 'autonomous'
         self.state = "base"   
         # Possible error states (extensible, but do not change names!): 
-        # 'None', 'lost-legs'
+        # 'None', 'lost-legs', 'bumper-hit'
         self.errorState = "None"
         self.customer = None
         ServerData.pubSound = rospy.Publisher('/robotsound', SoundRequest, queue_size=10)
         self.triggerFollowPublisher = rospy.Publisher('/ours/followModeTrigger', Bool)
+        self.bumperModeSubscriber = rospy.Subscriber('/ours/bumperModeTrigger', Bool, (lambda event : self.onBumperEvent()))
+        self.moveToPosePublisher = rospy.Publisher("/ours/goToPose", PoseWithCovarianceStamped)
+        self.triggerLostSubsriber = rospy.Subscriber('/ours/lostModeTrigger', Bool, onLostEvent)
         
     # METHODS FOR ACCESS FROM OUTSIDE   
     def onFiducial(self, fiducialNum): 
-        print "Read fiducial: " + str(fiducialNum)
+        print "Read fiducial: " + str(fiducialNum), "in state", self.state
         isCustomer = False
         isItem = False
         # Find out if the fiducial belongs to a customer: 
@@ -50,16 +54,17 @@ class Controller:
                     self.onCustomerLoggedIn()
                 else:
                     print "Received customer fiducial, but a customer is already logged in."
-            elif self.state == "follow" and self.errorState == "lost-legs":
+            elif self.state == "follow" and (self.errorState == "lost-legs" or self.errorState == "bumper-hit"):
                 if customer.getFiducialNum() == self.customer.getFiducialNum(): 
-                    # TODO: Reactivate Turtlebot's follow mode. 
                     self.errorState = "None"
                     self.speak("I will now continue following you.")
                     self.triggerFollowPublisher.publish(True)
                 else:
                     print "ERROR: tried to reactivate Turtlebot with other customer's card!"
+            elif self.state == "wait":
+                print "Getting back from wait into follow mode."
+                self.onChoseFollowMode()
             elif self.state == "autonomous" and self.errorState == "lost-legs":
-                #TODO
                 pass
             
         elif isItem: 
@@ -114,6 +119,7 @@ class Controller:
         
     def onCheckout(self): 
         # Called when customer chooses to check out. 
+        self.triggerFollowPublisher.publish(False)
         print self.state
         if self.state == "follow":
             self.speak("I now stop following you")
@@ -121,16 +127,24 @@ class Controller:
         self.triggerFollowPublisher.publish(False)
         print "Customer checked out"
         self.speak("Thank you for shopping with us, " + self.customer.getName() + "!")
-        # TODO: Move back to base position. 
         self.customer = None
+        pose = PoseWithCovarianceStamped()
+        pose.pose.pose.position.x = 0.0
+        pose.pose.pose.position.y = 0.0
+        self.moveToPosePublisher.publish(pose)
         
     def onLegsLost(self): 
         # Called when robot loses track of legs
-        print "Turtlebot lost track of legs."
-        self.speak("I lost track of you! Please reactivate me by holding your customer card in front of the webcam.")
-        # TODO: Call this method when Turtlebot lost track of legs
-        # TODO: Acoustic warning. 
+        print "\t\t\t\tTurtlebot lost track of legs."
+        self.speak("I lost track of you! Please reactivate with your customer card.")
         self.errorState = "lost-legs"
+        
+    def onBumperEvent(self): 
+        # Called when robot loses track of legs
+        print "\t\t\t\tTurtlebot bumped into something."
+        #self.speak("Sorry! I hit something! Please relocate me and then reactivate me with your customer card.")
+        self.speak("I hit something! Muhahahahaha! Please relocate me and then reactivate me with your customer card.")
+        self.errorState = "bumper-hit"
         
     def onReturnedToBase(self): 
         # Called when turtlebot returned to base. 
@@ -139,12 +153,28 @@ class Controller:
         self.state = "base"
         
     def onGuideRequest(self, item):
+    
+        self.triggerFollowPublisher.publish(False)
+    
         # Called when customer asked to be guided to given item. 
-        self.speak("You will now be guided to the item you selected. Please follow me.")
+        self.speak("You will now be guided to the " + item.getName() + ". Please follow me.")
         goal = item.getLocation()
         print "Customer asks to be guided to '" + item.getName() + \
               "' at location " + str(goal) + "."
-        # TODO: implement    
+        
+        x, y = item.getLocation()
+        print item.getLocation()
+        pose = PoseWithCovarianceStamped()
+        pose.pose.pose.position.x = x
+        pose.pose.pose.position.y = y
+        self.moveToPosePublisher.publish(pose)
+        
+        self.state = "guided"
+        
+    def onArrived(self):
+        print "Has arrived"
+        self.speak("We have arrived. Please show me your customer card and then scan the item.")
+        self.state = "wait"
         
     def speak(self, text):
         soundRequest = SoundRequest()
@@ -399,6 +429,7 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 return
                 
             elif type == "is-base":
+                print "is-base request", ServerData.controller.state == "base"
                 self.sendStructure({"isBase" : ServerData.controller.state == "base"})
                 return
                 
@@ -523,9 +554,21 @@ def fiducialEvent(scan):
         return
     
     # Make sure that fiducials are not registered too often
-    if time() - lastFiducialTime > TIME_BETWEEN_SCANS and scan.markers[0].id != 0 and scan.markers[0] != 255:
+    if time() - lastFiducialTime > TIME_BETWEEN_SCANS and scan.markers[0].id != 0 and scan.markers[0].id != 255:
         ServerData.controller.onFiducial(scan.markers[0].id)
         lastFiducialTime = time()
+     
+def onLostEvent(event):
+    print "\t\t\t\ton lost Event received"
+    if event.data:
+        ServerData.controller.onLegsLost()    
+     
+def arrivedEvent(data):
+    if data.position.x == 0.0 and data.position.y == 0.0:
+        ServerData.controller.onReturnedToBase()
+    else:
+        ServerData.controller.onArrived()
+        
      
 if __name__ == '__main__':
     global lastFiducialTime
@@ -537,6 +580,7 @@ if __name__ == '__main__':
     lastFiducialTime = 0.0
     
     rospy.Subscriber('/ar_pose_marker', AlvarMarkers, fiducialEvent)
+    rospy.Subscriber('/ours/arrivedAtBase', Pose, arrivedEvent)
     
     server = Server()
     server.serve()

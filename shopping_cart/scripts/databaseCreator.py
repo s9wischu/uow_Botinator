@@ -10,7 +10,7 @@ if __name__ == '__main__':
     customer.setName("Michael Keller")
     customer.setAccountBalance(Amount(29, 99))
     customer.setId(20022)
-    customer.setFiducialNum(7)
+    customer.setFiducialNum(4)
     customer.addAllergy("Peanuts")
     database.addCustomer(customer)
     
@@ -42,6 +42,7 @@ if __name__ == '__main__':
     item.setImagePath("../img/oreos.jpg")
     item.addContains("milk")
     item.addContains("gluten")
+    item.setLocation((1.125, 1.675))
     database.addItem(item)
     
     item = Item()
@@ -51,6 +52,7 @@ if __name__ == '__main__':
     item.setWeight(Weight(1.41))
     item.setDescription("USDA organic")
     item.setImagePath("../img/peppermints.jpg")
+    item.setLocation((1.761, 0.031))
     database.addItem(item)
     
     item = Item()
@@ -61,6 +63,7 @@ if __name__ == '__main__':
     item.setDescription("7 vitamins and minerals")
     item.setImagePath("../img/peanuts.jpg")
     item.addContains("peanuts")
+    item.setLocation((1.163, 0.0))
     database.addItem(item)
         
     item = Item()
@@ -73,6 +76,7 @@ if __name__ == '__main__':
     item.addContains("milk")
     item.addContains("soy")
     item.addContains("peanuts")
+    item.setLocation((1.163, 0.0))
     database.addItem(item)
     
     item = Item()
@@ -82,6 +86,7 @@ if __name__ == '__main__':
     item.setWeight(Weight(3.2))
     item.setDescription("Lightly Salted.")
     item.setImagePath("../img/popcorn.jpg")
+    item.setLocation((1.761, 0.031))
     database.addItem(item)
     
     item = Item()
@@ -91,6 +96,7 @@ if __name__ == '__main__':
     item.setWeight(Weight(2.5))
     item.setDescription("The Original.")
     item.setImagePath("../img/skittles.jpg")
+    item.setLocation((2.656, 0.822))
     database.addItem(item)
     
     item = Item()
@@ -111,6 +117,7 @@ if __name__ == '__main__':
     item.setDescription("Made with Whole Grain")
     item.setImagePath("../img/kelloggs.jpg")
     item.addContains("peanuts")
+    item.setLocation((1.842, 1.676))
     database.addItem(item)
     
     item = Item()
@@ -122,6 +129,7 @@ if __name__ == '__main__':
     item.setImagePath("../img/lindt.jpg")
     item.addContains("peanuts")
     item.addContains("milk")
+    item.setLocation((0.364, 0.802))
     database.addItem(item)
     
     

@@ -20,7 +20,10 @@
               
               if (data.errorState == "lost-legs") {
                   window.location.href= "/html/lost_legs.html"
+              } else if (data.errorState == "bumper-hit") {
+                  window.location.href= "/html/bumper_event.html"
               }
+              
               
               if (data.restarted) {
                   // Remove all items from the list if the server has been restarted. 

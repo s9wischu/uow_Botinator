@@ -27,7 +27,7 @@ There is the problem mentioned above where the robot falsely detects legs. This 
 - Is the sound volume loud enough but not too loud? Is the voice understandable?
 Yes.
 
-- Is the font size on the laptop big enough and are the buttons big enough thouchscreen use?
+- Is the font size on the laptop big enough and are the buttons big enough to use the touchscreen?
 Text is perfectly readable for people with normal eye sight, but there might be problems, for example for elderly people. 
 
 - Can items be added to the basket and removed from it easily?
@@ -40,14 +40,11 @@ Turtlebot is not particularly stable. The robot might tip over if it hits someth
 
 
 
-
-
-
-
-## Usabilitz and User Experience Goals
+## Usability and User Experience Goals
 1. No instruction necessary (users can figure out how to use the system by themselves)
-1. Shopping should not take significantly longer. 
-1. Search functionality should help customers
+1. Shopping should not take significantly longer.
+1. User should not have to change their usual behavior in the store (i.e. change walking pace)
+1. Search functionality should help customers 
 1. 
 
 
@@ -55,7 +52,7 @@ Turtlebot is not particularly stable. The robot might tip over if it hits someth
 
 Evaluation: Yes or No?
 - User figures out how to use robot without instruction (intuitivity)
-- System does not crash (reliability) and acts as forseen. 
+- System does not crash (reliability) and acts as foreseen. 
 - Robot does not crash into customer (safety)
 - Robot does not crash into something else (safety / usability)
 - Users manage to scan items reliably
@@ -67,6 +64,6 @@ Interview questions
 - CartBot makes shopping more enjoyable (strongly agree to strongly disagree)
 - CartBot simplifies shopping (strongly agree to strongly disagree)
 - I find the search function useful (strongly agree to strongly disagree)
-- Is sound ouput understandable?
+- Is sound output understandable?
 - Is font big enough / contrast strong enough?
 - Are the instructions of the robot clear and understandable?

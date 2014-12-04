@@ -196,8 +196,8 @@ class Item:
         item.setWeight(Weight.fromXML(node.find("weight")))
         item.setDescription(node.find("description").text)
         item.setImagePath(node.find("imagePath").text)
-        x = int(float(node.find("locationX")))
-        y = int(float(node.find("locationY")))
+        x = int(float(node.find("locationX").text))
+        y = int(float(node.find("locationY").text))
         item.setLocation((x, y))
         for node in node.iter("contains"):
             item.addContains(node.text)
@@ -207,7 +207,7 @@ class Item:
         """ Returns html for list item """
         from lxml.etree import ElementTree
         from xml.dom import minidom
-        root = html.parse("/home/motionlab/Desktop/git/Botinator/shopping_cart/scripts/html/product_list_item.html").getroot()
+        root = html.parse("/home/motionlab/catkin_ws/src/shopping_cart/scripts/html/product_list_item.html").getroot()
         root.get_element_by_id("field_image").attrib["src"] = self.getImagePath()
         root.get_element_by_id("field_price").text = str(self.getAmount())
         root.get_element_by_id("field_name").text = self.getName()
