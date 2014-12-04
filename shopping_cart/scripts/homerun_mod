@@ -1,0 +1,344 @@
+#!/usr/bin/env python
+
+import rospy
+
+from people_msgs.msg import PositionMeasurementArray
+from geometry_msgs.msg import Twist, PoseWithCovarianceStamped, Pose
+from std_msgs.msg import Bool
+from kobuki_msgs.msg import BumperEvent
+import threading
+from tf.transformations import euler_from_quaternion
+from math import *
+
+class Coordinate:
+    def __init__(self,x=0,y=0):
+        self.x = x
+        self.y = y
+    def __repr__(self):
+        return "(" + str(self.x) + ", " + str(self.y) + ")"
+
+class Struc:
+    currentPose = None
+    currentAngle = 0.0
+
+    odomSubscriber = None
+    velocityPublisher = None
+    arrivedPublisher = None
+    
+    returndistance = 0.0
+    returnangle = 0.0
+    data = None
+    final = None
+    moving_back = False
+    athome = False
+    
+    running = False
+    
+    SPEED_X = 0.2
+    SPEED_Z = 0.6
+    currentLinSpeed = 0.0
+    currentAngSpeed = 0.0
+    deltaLinSpeed = 0.0
+    
+    lastMeasurement = 0
+    
+    regions = [Coordinate() for i in range(5)]
+    regions[0].x = 0.0
+    regions[0].y = 0.0
+    regions[1].x = 0.374
+    regions[1].y = 0.0
+    regions[2].x = 2.542
+    regions[2].y = 0.0741
+    regions[3].x = 2.564
+    regions[3].y = 1.450
+    regions[4].x = 0.310
+    regions[4].y = 1.499
+    
+    corners = [Coordinate() for i in range(5)]
+    corners[0].x = 0.0      # not in use
+    corners[0].y = 0.0      # not in use
+    corners[1].x = 0.804
+    corners[1].y = 0.612
+    corners[2].x = 2.110
+    corners[2].y = 0.663
+    corners[3].x = 2.100
+    corners[3].y = 1.105
+    corners[4].x = 0.732
+    corners[4].y = 1.058
+    
+    normals = [Coordinate() for i in range(5)]
+    normals[0].x = 0.0      # not in use
+    normals[0].y = 0.0      # not in use
+    normals[1].x = 0.612
+    normals[1].y = -0.432
+    normals[2].x = 0.589
+    normals[2].y = 0.432
+    normals[3].x = -0.345
+    normals[3].y = 0.464
+    normals[4].x = -0.441
+    normals[4].y = -0.422
+    
+def getRegion(robotPose):
+    x = 1.457
+    y = 0.835
+    area = 0
+   
+
+    if (robotPose.x < x and robotPose.y < y):
+        # either 1 or 4
+        vec_x = robotPose.x - Struc.corners[1].x
+        vec_y = robotPose.y - Struc.corners[1].y
+        scalar = vec_x * Struc.normals[1].x + vec_y * Struc.normals[1].y
+        if (scalar < 0):
+            area = 4
+        else:
+            area = 1
+        
+    elif (robotPose.x < x and robotPose.y > y):
+        # either 3 or 4
+        vec_x = robotPose.x - Struc.corners[4].x
+        vec_y = robotPose.y - Struc.corners[4].y
+        scalar = vec_x * Struc.normals[4].x + vec_y * Struc.normals[4].y
+        if (scalar < 0):
+            area = 3
+        else:
+            area = 4
+            
+    elif (robotPose.x > x and robotPose.y < y):
+        # either 1 or 2
+        vec_x = robotPose.x - Struc.corners[2].x
+        vec_y = robotPose.y - Struc.corners[2].y
+        scalar = vec_x * Struc.normals[2].x + vec_y * Struc.normals[2].y
+        if (scalar < 0):
+            area = 1
+        else:
+            area = 2
+            
+    elif (robotPose.x > x and robotPose.y > y):
+        # either 2 or 3
+        vec_x = robotPose.x - Struc.corners[3].x
+        vec_y = robotPose.y - Struc.corners[3].y
+        scalar = vec_x * Struc.normals[3].x + vec_y * Struc.normals[3].y
+        if (scalar < 0):
+            area = 2
+        else:
+            area = 3
+        
+    return area    
+    #print "area: " + str(area)
+    
+def onGoToPoseEvent(pose):
+    # Move to a specific pose. 
+    
+    # Only do so if we already know our current position. 
+    if Struc.currentPose is None:
+        print "ERROR: NO CURRENT POSITION"
+        return 
+        
+    # Region robot is currenty in (before moving). 
+    startRegion = getRegion(Struc.currentPose.pose.pose.position)
+    # Regin our robot should move to. 
+    destRegion = getRegion(pose.pose.pose.position)
+    
+    # Region robot is currently in (changes when robot moves)
+    curRegion = startRegion
+    print "curreg", curRegion, "desreg", destRegion
+    while curRegion != destRegion:
+        # Compute next region robot should move to. 
+        nextRegion = (curRegion) % 4 + 1
+        
+        # pose is the goal position
+        lpose = PoseWithCovarianceStamped() #Pose()
+        lpose.pose.pose.position.x = Struc.regions[nextRegion].x
+        lpose.pose.pose.position.y = Struc.regions[nextRegion].y
+        
+        print "moving to region", nextRegion
+        
+        # Send robot to goal
+        moveToLocation(lpose)
+        # Robot is now in a different region. 
+        curRegion = nextRegion
+        
+    print "moving to final position"
+    moveToLocation(pose)
+       
+    # pose is the goal position
+    ans = Pose() #Pose()
+    ans.position.x = pose.pose.pose.position.x
+    ans.position.y = pose.pose.pose.position.y  
+        
+    # Publish that robot has arrived. 
+    Struc.arrivedPublisher.publish(ans)
+            
+        
+        
+
+def onOdomMeasurement(data):
+    from tf.transformations import euler_from_quaternion
+    # Update data in structure. 
+    
+    
+    # Save current pose
+    Struc.currentPose = data
+    # Compute current angle and store
+    
+    orient = data.pose.pose.orientation
+    Struc.currentAngle = euler_from_quaternion([orient.x, orient.y, orient.z, orient.w])[2]
+    
+    
+def move_back():
+    Struc.moving_back = True
+    
+    # Total distance moved 
+    deltax = Struc.final.pose.pose.position.x - Struc.currentPose.pose.pose.position.x
+    deltay = Struc.final.pose.pose.position.y - Struc.currentPose.pose.pose.position.y
+    dist_from_final = sqrt(deltax * deltax + deltay * deltay)
+    
+    # Move until desired distance has been done. 
+    msg = Twist()
+    
+    while dist_from_final + 0.07 < Struc.returndistance: 
+        
+        deltax = Struc.final.pose.pose.position.x - Struc.currentPose.pose.pose.position.x
+        deltay = Struc.final.pose.pose.position.y - Struc.currentPose.pose.pose.position.y
+        dist_from_final = sqrt(deltax * deltax + deltay * deltay)
+        Struc.deltaLinSpeed = Struc.SPEED_X
+        Struc.currentAngSpeed = 0
+
+    Struc.athome = True
+    Struc.moving_back = False
+          
+    
+def calc_return_angle():
+    deltax = Struc.currentPose.pose.pose.position.x - Struc.init.pose.pose.position.x
+    deltay = Struc.currentPose.pose.pose.position.y - Struc.init.pose.pose.position.y
+    Struc.returnangle = atan2(-deltay, -deltax)
+    Struc.returndistance = min(sqrt(deltax * deltax + deltay * deltay), 0.5)
+    print "current", Struc.currentPose.pose.pose.position
+    print "dest", Struc.init.pose.pose.position
+    print "returndistance", Struc.returndistance
+ 
+def rotate_back():    
+
+    
+    msg = Twist()
+    # Current angle
+    cur = get_angle(Struc.currentPose)
+    # Angle robot should fase in the end
+    ret = Struc.returnangle
+    # Deviation from goal angle. 
+    error = abs(cur - ret)
+    
+    # Move until error is small enough
+    while error > 0.2 and not Struc.moving_back:
+        msg = Twist()
+        # Current angle
+        cur = get_angle(Struc.currentPose)
+        # Angle robot should fase in the end
+        ret = Struc.returnangle
+        # Deviation from goal angle. 
+        error = abs(cur - ret)
+        
+        scal = -sin(cur) * cos(ret) + cos(cur) * sin(ret)
+        
+        if scal > 0:
+            Struc.currentAngSpeed = 0.5
+        else:
+            Struc.currentAngSpeed = -0.5
+            
+        Struc.deltaLinSpeed = -Struc.SPEED_X
+            
+        #Struc.velocityPublisher.publish(msg)
+ 
+def get_angle(pose):
+    orient = pose.pose.pose.orientation
+    return euler_from_quaternion([orient.x, orient.y, orient.z, orient.w])[2]
+
+def moveToLocation(pose):
+    print pose
+    
+    Struc.running = True
+    sendMovementCommand()
+
+    # Where the robot is supposed to go to
+    Struc.init = pose
+    # Where the robot currently is
+    Struc.final = Struc.currentPose
+    # Calculate angle to which robot must move.
+    calc_return_angle()
+    # Robot is not yet at home
+    Struc.atHome = False
+    # Rotate 
+    
+    from math import sqrt
+    deltax = Struc.currentPose.pose.pose.position.x - Struc.init.pose.pose.position.x
+    deltay = Struc.currentPose.pose.pose.position.y - Struc.init.pose.pose.position.y
+    actDis = sqrt(deltax * deltax + deltay * deltay)
+    
+    
+    while actDis > 0.15:
+        # Where the robot is supposed to go to
+        Struc.final = Struc.currentPose
+        # Calculate angle to which robot must move.
+        calc_return_angle()
+    
+        rotate_back()
+
+        from time import sleep
+        sleep(1)
+        print "SLEEPING"
+        Struc.atHome = False
+        # Move
+        move_back()
+        sleep(1)
+        
+        deltax = Struc.currentPose.pose.pose.position.x - Struc.init.pose.pose.position.x
+        deltay = Struc.currentPose.pose.pose.position.y - Struc.init.pose.pose.position.y
+        actDis = sqrt(deltax * deltax + deltay * deltay)
+        
+    
+    Struc.running = False
+    
+        
+    Struc.atHome = False
+        
+def sendMovementCommand():
+    if not Struc.running:
+        return
+    threading.Timer(0.001, sendMovementCommand).start()
+    
+    Struc.currentLinSpeed += Struc.deltaLinSpeed / 500.0
+    
+    if Struc.currentLinSpeed > Struc.SPEED_X:
+        Struc.currentLinSpeed = Struc.SPEED_X
+    if Struc.currentLinSpeed < 0:
+        Struc.currentLinSpeed = 0
+    
+    msg = Twist()
+    msg.angular.z = Struc.currentAngSpeed
+    msg.linear.x = Struc.currentLinSpeed
+    Struc.velocityPublisher.publish(msg)
+        
+        
+        
+        
+def onBumperEvent(data):
+    # TODO: Handle Bumper events correctly. 
+    pose = PoseWithCovarianceStamped() #Pose()
+    pose.pose.pose.position.x = 2.656
+    pose.pose.pose.position.y = 0.822
+    #onGoToPoseEvent(pose)
+
+if __name__ == "__main__":
+    rospy.init_node('follower', anonymous=True)
+    rospy.Subscriber("/ours/goToPose", PoseWithCovarianceStamped, onGoToPoseEvent)
+    rospy.Subscriber("/robot_pose_ekf/odom_combined", PoseWithCovarianceStamped, onOdomMeasurement)
+    rospy.Subscriber('/mobile_base/events/bumper', BumperEvent, onBumperEvent)
+    
+    Struc.arrivedPublisher = rospy.Publisher("/ours/arrivedAtBase", Pose, queue_size=1)
+    Struc.velocityPublisher = rospy.Publisher('/mobile_base/commands/velocity', Twist, queue_size=1)
+    
+
+    
+    rospy.spin()
+    
