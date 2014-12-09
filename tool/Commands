@@ -1,0 +1,61 @@
+Synchronize System Clock:
+$ sudo ntpdate ntp.ubuntu.com
+
+Minimal Bringup on Robot:
+$ roslaunch turtlebot_bringup minimal.launch 
+
+Start of 3D sensor: 
+$ roslaunch turtlebot_bringup 3dsensor.launch arg:=scan_processing
+$ roslaunch turtlebot_bringup 3dsensor.launch
+
+Running ekf (published odom_combined): 
+$  rosrun robot_pose_ekf robot_pose_ekf /robot_pose_ekf/odom_combined:=/odom_combined output_frame:=odom_combined
+$ rosrun robot_pose_ekf robot_pose_ekf 
+
+Running pointcloud_to_laserscan
+rosrun pointcloud_to_laserscan pointcloud_to_laserscan
+
+Start video server:
+rosrun web_video_server web_video_server 
+
+Start webcam (run this on the robot);
+roslaunch gscam v4l.launch 
+I've installed it on leatherback (package ros-hydro-gscam)
+topic of webcam: v4l/camera/image_raw
+
+AR-tracking on turtlebot
+follow https://github.com/jstnhuang/cse481c_tutorials/wiki/How-to-use-the-webcam-with-AR-markers
+roslaunch webcam_ar_track webcam_indiv.launch
+
+Start leg detector
+-> minimal bringup
+-> 3d bringup
+-> ekf
+roslaunch leg_detector turtlebot.launch
+
+rosparam set use_sim_time true
+motionlab@robotuna:~/catkin_ws$ rosrun tf static_transform_publisher 0 0 0 0 0 0 0 base_link laser 100
+rosrun gmapping slam_gmapping scan:=base_scan
+
+Sounds
+Package: ros-hydro-sound-play
+Run node: rosrun sound_play soundplay_node.py 
+
+PACKAGES:
+- ros-hydro-sound-play
+- ros-hydro-gscam
+
+START UP LEATHERBACK (a few nodes only start if launched on leatherback directly, even ssh fails):
+- roslaunch turtlebot_bringup minimal.launch
+- roslaunch turtlebot_bringup 3dsensor.launch
+- roslaunch sound_play soundplay_node.launch
+- roslaunch webcam_ar_track webcam_indiv.launch     (does not start with launchfile. dont know why)
+- roslaunch gscam v4l.launch    (login on robot laptop first than starting via SSH possible)
+- rosrun web_video_server web_video_server
+- rosrun robot_pose_ekf robot_pose_ekf 
+- rosrun pointcloud_to_laserscan pointcloud_to_laserscan
+- rosrun leg_detector turtlebot.launch
+- rosrun beginner_tutorials server.py   (not yet included in launchfile)
+- follower
+
+
